@@ -1,0 +1,6 @@
+
+#define XDFILEVERSION 	1, 0, 0, 10
+#define XDPRODUCTVERSION 	1, 0, 0, 10
+#define XDFILEVERSIONSTR "1.0.0.10"
+#define XDPRODUCTVERSIONSTR "1.0.0.10"
+#define XDLEGALCOPYRIGHTSTR "Copyright (c) 2019 by Wayne E. Wright, W5XD"

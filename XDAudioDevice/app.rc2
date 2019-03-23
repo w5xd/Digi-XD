@@ -1,0 +1,31 @@
+#include "XDVersion.h"
+1 VERSIONINFO
+FILEVERSION 	XDFILEVERSION
+PRODUCTVERSION 	XDPRODUCTVERSION
+FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+FILEFLAGS 0x1L
+#else
+FILEFLAGS 0x0L
+#endif
+FILEOS 0x40004L
+FILETYPE VFT_DLL
+FILESUBTYPE 0x0L
+    BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+    BLOCK "040904B0"
+        BEGIN
+        VALUE "FileDescription", "XD audio device assembly\0"
+        VALUE "FileVersion", XDFILEVERSIONSTR
+        VALUE "ProductVersion", XDPRODUCTVERSIONSTR
+        VALUE "LegalCopyright", XDLEGALCOPYRIGHTSTR
+        VALUE "InternalName", "XDAudioDevice.dll"
+        VALUE "OriginalFilename", "XDAudioDevice.dll"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+    VALUE "Translation", 0x409, 1200
+    END
+END

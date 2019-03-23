@@ -1,0 +1,9 @@
+.vs
+*.swp
+*~
+*.zip
+*.user
+*Debug/
+*Release/
+*obj/
+*.aps

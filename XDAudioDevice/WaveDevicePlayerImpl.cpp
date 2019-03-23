@@ -1,0 +1,281 @@
+#include <vector>
+#include "WaveDevicePlayerImpl.h"
+#include <AudioSink.h>
+#include "WaveWriterImpl.h"
+namespace XD { namespace impl {
+
+	struct RecordingBuffer : public WAVEHDR
+	{
+		static const unsigned BUF_SIZE = 0x1000;
+
+        // the Windows wave device wants buffers
+        // described by WAVEHDR. it makes for
+        // half as many trips through the memory
+        // allocator if we put the WAVEHDR in the buffer.
+		RecordingBuffer(HWAVEIN wi) 
+			:m_w(wi)
+		{
+			setup();
+		}
+		void setup()
+		{
+			lpData = (LPSTR)&samples[0];
+			dwBufferLength = sizeof(samples);
+			dwUser = 0;
+			dwBytesRecorded = 0;
+			dwFlags = 0;
+			dwLoops = 0;
+			lpNext = 0;
+			reserved = 0;
+			waveInPrepareHeader(m_w, this, sizeof(WAVEHDR));
+		}
+		~RecordingBuffer()
+		{
+			waveInUnprepareHeader(m_w, this, sizeof(WAVEHDR));
+		}
+		void reuse()
+		{
+			waveInUnprepareHeader(m_w, this, sizeof(WAVEHDR));
+			setup();
+		}
+		short samples[BUF_SIZE];
+		const HWAVEIN m_w;
+	};
+
+	WaveDevicePlayerImpl::WaveDevicePlayerImpl()
+		: m_waveIn(0)
+		, m_threadId(0)
+        , m_wf({})
+		, m_deviceIndex(-1)
+        , m_channel(-1)
+		, m_started(::CreateEvent(0, TRUE, FALSE, 0))
+		, m_windowThread(std::bind(&WaveDevicePlayerImpl::threadHead, this))
+	{
+		::WaitForSingleObject(m_started, INFINITE);
+		::CloseHandle(m_started);
+		m_started = INVALID_HANDLE_VALUE;
+	}
+
+	WaveDevicePlayerImpl::~WaveDevicePlayerImpl()
+	{
+		if (IsWindow())
+		{
+			Close();
+			::PostThreadMessage(m_threadId, WM_DESTROYWAVEWINDOW, 0, 0);
+			::PostThreadMessage(m_threadId, WM_QUIT, 0, 0);
+		}
+		if (m_windowThread.joinable())
+			m_windowThread.join();
+	}
+
+    
+    // goop to put the wave in device on its own thread.
+    // why? the wave device needs to live on a thread
+    // that has a message pump (GetMessage/DispatchMessage).
+    // But we're in Windows .net land, not knowing whether
+    // our caller has one of those. 
+    // so we make one.
+	void WaveDevicePlayerImpl::threadHead()
+	{
+		m_threadId = ::GetCurrentThreadId();
+		Create(0, 0, 0, WS_POPUP);
+		::SetEvent(m_started);
+		MSG msg;
+		while (::GetMessage(&msg, 0, 0, 0))
+		{
+			if (msg.message == WM_DESTROYWAVEWINDOW)
+				DestroyWindow();
+			else
+				::DispatchMessage(&msg);
+		}
+		if (m_waveIn)
+			::waveInClose(m_waveIn);
+		m_waveIn = 0;
+	}
+
+	// from external thread
+	bool WaveDevicePlayerImpl::Open(unsigned deviceIndex, unsigned channel, void *demod)
+	{
+        if (IsWindow())
+        {
+            bool retval =  SendMessage(WM_STARTPLAYBACK, deviceIndex, channel) != 0;
+            if (retval)
+            {
+				m_audioSink = std::shared_ptr<AudioSink>(reinterpret_cast<XD::AudioSink*>(demod),
+					[](AudioSink*p) { p->ReleaseSink(); });
+            }
+            return retval;
+        }
+		return false;
+	}
+	
+	// from external thread
+	void WaveDevicePlayerImpl::Close()
+	{
+		if (IsWindow())
+			SendMessage(WM_STOPPLAYBACK);
+		m_audioSink.reset();
+	}
+
+	LRESULT WaveDevicePlayerImpl::OnOpenPlayback(UINT /*nMsg*/, WPARAM deviceIndex, LPARAM channel,
+		BOOL& /*bHandled*/)
+	{
+		if (m_waveIn)
+			return 0;
+		if (channel > 1)
+			return 0;
+        // we handle just two variations: mono and stereo.
+        m_wf = {};
+        m_wf.wFormatTag = WAVE_FORMAT_PCM;
+        m_wf.nSamplesPerSec = 12000;
+        m_wf.wBitsPerSample = 16;
+        m_wf.nChannels = 2;
+        m_wf.nBlockAlign = m_wf.wBitsPerSample / 8 * m_wf.nChannels;
+        m_wf.nAvgBytesPerSec = m_wf.nSamplesPerSec * m_wf.nBlockAlign;
+
+		if (MMSYSERR_NOERROR == ::waveInOpen(&m_waveIn, static_cast<UINT>(deviceIndex), &m_wf,
+			(DWORD_PTR)m_hWnd, 0, CALLBACK_WINDOW))
+		{	// try stereo first
+            // success...do nothing
+		}
+		else
+		{	// try mono.
+            m_wf.nChannels = 1;
+            m_wf.nBlockAlign = m_wf.wBitsPerSample / 8 * m_wf.nChannels;
+            m_wf.nAvgBytesPerSec = m_wf.nSamplesPerSec * m_wf.nBlockAlign;
+			if (MMSYSERR_NOERROR == ::waveInOpen(&m_waveIn, static_cast<UINT>(deviceIndex), &m_wf,
+				(DWORD_PTR)m_hWnd, 0, CALLBACK_WINDOW))
+			{
+                // success...do nothing
+			}
+		}
+
+		if (m_waveIn != 0)
+		{
+			m_deviceIndex = static_cast<unsigned>(deviceIndex);
+            m_channel = static_cast<unsigned>(channel);
+            // one buffer is not enough. two is probably enough. so maybe 3 is better?
+			waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
+			waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
+            waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
+            //waveInStart(m_waveIn); No. Instead, exit with device in paused state
+            return 1;
+		}
+		return 0;
+	}
+
+	LRESULT WaveDevicePlayerImpl::OnClosePlayback(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
+		BOOL& /*bHandled*/)
+	{
+		if (!m_waveIn)
+			return 0;
+		waveInReset(m_waveIn);
+		waveInClose(m_waveIn);
+		m_waveIn = 0;
+		return 0;
+	}
+
+	LRESULT WaveDevicePlayerImpl::OnWaveInData(UINT /*nMsg*/, WPARAM dev, LPARAM wave,
+		BOOL& /*bHandled*/)
+	{
+		RecordingBuffer *pBuf = reinterpret_cast<RecordingBuffer*>(wave);
+        if (pBuf)
+        {
+            if (m_waveIn)
+            {        
+                if (m_audioSink)
+                {
+                    const unsigned numFrames = pBuf->dwBytesRecorded / (sizeof(short) * m_wf.nChannels);
+                    if (m_wf.nChannels == 1)
+                    {   // if input is mono, no need to reformat
+                        m_audioSink->AddMonoSoundFrames(pBuf->samples, numFrames);
+                        if (m_recordingFile)
+                            m_recordingFile->Write(pBuf->samples, numFrames );
+                    }
+                    else
+                    {   // multi-channel input data has to be sorted through
+                        std::vector<short> mono(numFrames);
+                        short *p = &mono[0];
+                        const short *q = pBuf->samples;
+                        if (m_channel >= m_wf.nChannels)
+                            return 0;
+                        q += m_channel;
+                        for (unsigned frames = 0; frames < numFrames; frames += 1)
+                        {
+                            *p++ = *q;
+                            q += m_wf.nChannels;
+                        }
+                        m_audioSink->AddMonoSoundFrames(
+                            reinterpret_cast<const short *>(&mono[0]), numFrames);
+                        if (m_recordingFile)
+                            m_recordingFile->Write(&mono[0], static_cast<unsigned>(mono.size()));
+                    }
+                }
+                pBuf->reuse();
+                waveInAddBuffer(m_waveIn, pBuf, sizeof(WAVEHDR));
+            }
+            else
+                delete pBuf;
+        }
+		return 0;
+	}
+
+	bool WaveDevicePlayerImpl::Pause()
+	{
+		if (IsWindow())
+			return SendMessage(WM_PAUSEPLAYBACK) != 0;
+		return false;
+	}
+
+	LRESULT WaveDevicePlayerImpl::OnPause(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
+		BOOL& /*bHandled*/)
+	{
+		if (m_waveIn)
+		{
+			waveInStop(m_waveIn);
+			return 1;
+		}
+		return 0;
+	}
+
+	bool WaveDevicePlayerImpl::Resume()
+	{
+		if (IsWindow())
+			return SendMessage(WM_CONTINUEPLAYBACK) != 0;
+		return false;
+	}
+
+	LRESULT WaveDevicePlayerImpl::OnResume(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
+		BOOL& /*bHandled*/)
+	{
+		if (m_waveIn)
+            return MMSYSERR_NOERROR == waveInStart(m_waveIn) ? 1 : 0;
+		return 0;
+	}
+    LRESULT WaveDevicePlayerImpl::OnStartRecording(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM fname,
+        BOOL& /*bHandled*/)
+    {
+        m_recordingFile = std::make_shared<WaveWriterImpl>(reinterpret_cast<const wchar_t *>(fname));
+        return 0;
+    }
+
+    LRESULT WaveDevicePlayerImpl::OnStopRecording(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
+        BOOL& /*bHandled*/)
+    {
+        m_recordingFile.reset();
+        return 0;
+    }
+
+    void WaveDevicePlayerImpl::RecordFile(const std::wstring &w)
+    {
+        if (IsWindow())
+            SendMessage(WM_STARTRECORDING, 0, (LPARAM)w.c_str());
+    }
+
+    void  WaveDevicePlayerImpl::StopRecord()
+    {
+        if (IsWindow())
+            SendMessage(WM_STOPRECORDING);
+    }
+
+}}
