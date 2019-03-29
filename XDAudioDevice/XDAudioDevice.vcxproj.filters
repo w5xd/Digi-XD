@@ -51,6 +51,9 @@
     <ClInclude Include="XDTxAudioSink.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="XDVersion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp">

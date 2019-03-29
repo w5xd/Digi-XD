@@ -50,14 +50,19 @@ namespace XD {
 
     System::IntPtr WaveDeviceTx::GetRealTimeAudioSink()
     {
-        impl::AudioBeginEndFcn_t
-            completeFcn;
-        if (nullptr != m_soundCallback)
-            completeFcn =
-            std::bind(&ForwardAudioComplete,
-                System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate<SoundBeginEnd^>(m_soundCallback).ToInt64(),
-                std::placeholders::_1);
-        return System::IntPtr(m_impl->GetTxSink(completeFcn));
+        try {
+            impl::AudioBeginEndFcn_t    completeFcn;
+            if (nullptr != m_soundCallback)
+                completeFcn =
+                std::bind(&ForwardAudioComplete,
+                    System::Runtime::InteropServices::Marshal::GetFunctionPointerForDelegate<SoundBeginEnd^>(m_soundCallback).ToInt64(),
+                    std::placeholders::_1);
+            return System::IntPtr(m_impl->GetTxSink(completeFcn));
+        }
+        catch (const std::exception &e)
+        {
+            throw gcnew System::Exception(gcnew System::String(e.what()));
+        }
     }
 
     SoundBeginEnd^  WaveDeviceTx::SoundSyncCallback::get()

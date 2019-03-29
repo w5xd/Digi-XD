@@ -103,7 +103,6 @@ namespace XD {
             m_complete = f;
         }
 
-
         bool  WaveDeviceTxImpl::AddMonoSoundFrames(const short *p, unsigned count)
         {      // on different thread
             if (IsWindow())
@@ -209,6 +208,11 @@ namespace XD {
                     if (!m_playing)
                         StartPlayIfTime();
                 }
+                else
+                {
+                    waveOutClose(m_waveOut);
+                    m_waveOut = 0;
+                }
             }
             return 0;
         }
@@ -253,6 +257,15 @@ namespace XD {
         {
             if (IsWindow())
                 SendMessage(WM_WAVEDEVICEOUTABORT);
+        }
+
+        bool WaveDeviceTxImpl::OkToStart()
+        {
+            if (!IsWindow())
+                throw std::runtime_error("WaveTxDevice no HWND");
+            if (!m_waveOut)
+                throw std::runtime_error("WaveTxDevice no HWAVEOUT");
+            return true;
         }
 
         LRESULT WaveDeviceTxImpl::OnAbortPlayback(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,

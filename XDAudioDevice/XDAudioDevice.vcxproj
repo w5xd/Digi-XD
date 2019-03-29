@@ -149,6 +149,7 @@
     <ClInclude Include="WaveWriterImpl.h" />
     <ClInclude Include="XDRxAudioSource.h" />
     <ClInclude Include="XDTxAudioSink.h" />
+    <ClInclude Include="XDVersion.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />

@@ -49,6 +49,10 @@ namespace XD {
 
         AudioSink *WaveDeviceTx::GetTxSink(const AudioBeginEndFcn_t &complete)
         {
+            if (!m_impl)
+                return false;
+            if (!m_impl->OkToStart())
+                return false;
             m_impl->SetAudioBeginEndCb(complete);
             return new TxAudioSink(m_impl);
         }

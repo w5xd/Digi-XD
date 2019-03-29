@@ -29,6 +29,7 @@ namespace XD {
             Transmit_Cycle GetTransmitCycle() const { return m_transmitCycle;   }
             void SetTransmitCycle(Transmit_Cycle v) { m_transmitCycle = v; }
             void SetAudioBeginEndCb(const AudioBeginEndFcn_t&);
+            bool OkToStart();
             DECLARE_WND_CLASS(_T("XDft8WaveDeviceRecorder"))
         protected:
             typedef std::unique_lock<std::mutex> lock_t;
