@@ -26,6 +26,7 @@ namespace XD {
 
         System::IntPtr GetRealTimeAudioSink();
         property SoundBeginEnd^ SoundSyncCallback { SoundBeginEnd^ get(); void set(SoundBeginEnd^); }
+        property float Gain { float get(); void set(float); }
 
     private:
         impl::WaveDeviceTx *m_impl;

@@ -15,6 +15,8 @@ namespace XD {
 
             void RecordFile(const std::wstring &w);
             void StopRecord();
+            float GetGain();
+            void SetGain(float);
         private:
             std::shared_ptr<WaveDevicePlayerImpl> m_impl;
         };

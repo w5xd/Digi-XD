@@ -25,6 +25,7 @@ namespace XD {
 
 		bool StartRecordingFile(System::String ^filePath);
 		void StopRecording();
+        property float Gain { float get(); void set(float); }
 	private:
 		impl::WaveDevicePlayer *m_impl;
 	};

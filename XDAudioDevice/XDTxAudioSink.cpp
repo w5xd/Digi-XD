@@ -77,6 +77,12 @@ namespace XD {
     void   WaveDeviceTx::TransmitCycle::set(Transmit_Cycle when)
     { m_impl->SetTransmitCycle(static_cast<impl::Transmit_Cycle>((int)when));  }
 
+    void WaveDeviceTx::Gain::set(float v)
+    { return m_impl->SetGain(v);    }
+
+    float WaveDeviceTx::Gain::get()
+    {  return m_impl->GetGain();  }
+
     System::IntPtr FileDeviceTx::Open(System::String ^filePath)
     {
         try {
@@ -88,4 +94,6 @@ namespace XD {
             throw gcnew System::Exception(gcnew System::String(e.what()));
         }
     }
+
+ 
 }

@@ -19,6 +19,8 @@ namespace XD {
             Transmit_Cycle GetTransmitCycle() const;
             void SetTransmitCycle(Transmit_Cycle v);
             AudioSink *GetTxSink(const AudioBeginEndFcn_t &);
+            void SetGain(float);
+            float GetGain();
         protected:
             std::shared_ptr<WaveDeviceTxImpl> m_impl;
         };

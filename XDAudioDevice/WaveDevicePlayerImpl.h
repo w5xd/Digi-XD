@@ -17,6 +17,7 @@ namespace XD {
         const UINT WM_CONTINUEPLAYBACK = WM_USER + 5;
         const UINT WM_STARTRECORDING = WM_USER + 6;
         const UINT WM_STOPRECORDING = WM_USER + 7;
+        const UINT WM_SETGAIN = WM_USER + 8;
 
         class WaveWriterImpl;
 
@@ -30,6 +31,8 @@ namespace XD {
             bool Resume();
             void RecordFile(const std::wstring &w);
             void StopRecord();
+            float GetGain();
+            void SetGain(float);
             DECLARE_WND_CLASS(_T("XDft8WaveDevicePlayer"))
         protected:
             BEGIN_MSG_MAP(WaveDevicePlayerImpl)
@@ -40,6 +43,7 @@ namespace XD {
                 MESSAGE_HANDLER(WM_CONTINUEPLAYBACK, OnResume)
                 MESSAGE_HANDLER(WM_STARTRECORDING, OnStartRecording)
                 MESSAGE_HANDLER(WM_STOPRECORDING, OnStopRecording)
+                MESSAGE_HANDLER(WM_SETGAIN, OnSetGain)
             END_MSG_MAP()
             // Handler prototypes:
             //  LRESULT MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -58,6 +62,8 @@ namespace XD {
                 BOOL& /*bHandled*/);
             LRESULT OnStopRecording(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
                 BOOL& /*bHandled*/);
+            LRESULT OnSetGain(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
+                BOOL& /*bHandled*/);
 
             void Close();
             void threadHead();
@@ -65,10 +71,12 @@ namespace XD {
 			std::shared_ptr<AudioSink> m_audioSink;
             WAVEFORMATEX m_wf;
             HWAVEIN m_waveIn;
+            MIXERCONTROLW m_mixerControlId;
             HANDLE m_started;
             DWORD m_threadId;
             unsigned m_deviceIndex;
             unsigned m_channel;
+            float m_gain;
             std::shared_ptr<WaveWriterImpl> m_recordingFile;
             std::thread m_windowThread;// initialize last
         };

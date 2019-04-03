@@ -44,10 +44,12 @@ namespace XD { namespace impl {
 
 	WaveDevicePlayerImpl::WaveDevicePlayerImpl()
 		: m_waveIn(0)
+        , m_mixerControlId({})
 		, m_threadId(0)
         , m_wf({})
 		, m_deviceIndex(-1)
         , m_channel(-1)
+        , m_gain(-1)
 		, m_started(::CreateEvent(0, TRUE, FALSE, 0))
 		, m_windowThread(std::bind(&WaveDevicePlayerImpl::threadHead, this))
 	{
@@ -159,6 +161,33 @@ namespace XD { namespace impl {
 			waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
             waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
             //waveInStart(m_waveIn); No. Instead, exit with device in paused state
+
+            // find its volume control
+            MIXERLINECONTROLSW mixerLineControls = {};
+            mixerLineControls.cbStruct = sizeof(mixerLineControls);
+            mixerLineControls.dwControlType = MIXERCONTROL_CONTROLTYPE_VOLUME;
+            m_mixerControlId = {};
+            m_mixerControlId.cbStruct = sizeof(m_mixerControlId);
+            mixerLineControls.pamxctrl = &m_mixerControlId;
+            mixerLineControls.cbmxctrl = sizeof(MIXERCONTROLW);
+            mixerLineControls.cControls = 1;
+            MMRESULT mmres = mixerGetLineControlsW(reinterpret_cast<HMIXEROBJ>(m_waveIn), &mixerLineControls,
+                MIXER_GETLINECONTROLSF_ONEBYTYPE | MIXER_OBJECTF_HWAVEIN);
+            if (mmres == MMSYSERR_NOERROR)
+            {
+                MIXERCONTROLDETAILS	mxcd = {};
+                mxcd.cbStruct = sizeof(mxcd);
+                mxcd.dwControlID = m_mixerControlId.dwControlID;
+                mxcd.cChannels = 1;
+                MIXERCONTROLDETAILS_UNSIGNED		uValue;
+                mxcd.cbDetails = sizeof(uValue);
+                mxcd.paDetails = &uValue;
+                mmres = mixerGetControlDetails(reinterpret_cast<HMIXEROBJ>(m_waveIn), &mxcd,
+                    MIXER_OBJECTF_HWAVEIN);
+                if (mmres == MMSYSERR_NOERROR)
+                    m_gain = static_cast<float>(m_mixerControlId.Bounds.dwMinimum + uValue.dwValue) /
+                            static_cast<float>(m_mixerControlId.Bounds.dwMaximum - m_mixerControlId.Bounds.dwMinimum);
+            }
             return 1;
 		}
 		return 0;
@@ -276,6 +305,39 @@ namespace XD { namespace impl {
     {
         if (IsWindow())
             SendMessage(WM_STOPRECORDING);
+    }
+
+    float WaveDevicePlayerImpl::GetGain()
+    {
+        return m_gain;
+    }
+
+    void WaveDevicePlayerImpl::SetGain(float v)
+    {
+        if (IsWindow())
+            SendMessage(WM_SETGAIN, *reinterpret_cast<WPARAM*>(&v));
+    }
+
+    LRESULT WaveDevicePlayerImpl::OnSetGain(UINT /*nMsg*/, WPARAM wParam, LPARAM /*lParam*/,
+        BOOL& /*bHandled*/)
+    {
+        float gain = *reinterpret_cast<float *>(&wParam);
+        if ((gain < 0) || (gain > 1))
+            return 0;
+        MIXERCONTROLDETAILS	mxcd = {};
+        mxcd.cbStruct = sizeof(mxcd);
+        mxcd.dwControlID = m_mixerControlId.dwControlID;
+        mxcd.cChannels = 1;
+        MIXERCONTROLDETAILS_UNSIGNED		uValue;
+        mxcd.cbDetails = sizeof(uValue);
+        mxcd.paDetails = &uValue;
+        uValue.dwValue = static_cast<DWORD>(gain * (m_mixerControlId.Bounds.dwMaximum - m_mixerControlId.Bounds.dwMinimum));
+        uValue.dwValue += m_mixerControlId.Bounds.dwMinimum;
+        MMRESULT mmres = mixerSetControlDetails(reinterpret_cast<HMIXEROBJ>(m_waveIn), &mxcd,
+            MIXER_OBJECTF_HWAVEIN);
+        if (mmres == MMSYSERR_NOERROR)
+            m_gain = gain;
+        return 0;
     }
 
 }}

@@ -64,6 +64,11 @@ namespace XD {
 			m_impl->StopRecord();
 	}
 
+    void WaveDevicePlayer::Gain::set(float v)
+    { return m_impl->SetGain(v); }
+
+    float WaveDevicePlayer::Gain::get()
+    {   return m_impl->GetGain();    }
 
 	bool WaveFilePlayer::Play(System::String ^fileName, unsigned channel, System::IntPtr demodulator)
 	{
@@ -76,5 +81,6 @@ namespace XD {
             throw gcnew System::Exception(gcnew System::String(e.what()));
         }
 	}
+
 
 }

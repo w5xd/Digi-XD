@@ -57,12 +57,12 @@ namespace XD {
             return new TxAudioSink(m_impl);
         }
         Transmit_Cycle WaveDeviceTx::GetTransmitCycle() const
-        {
-            return m_impl->GetTransmitCycle();
-        }
+        {  return m_impl->GetTransmitCycle(); }
         void WaveDeviceTx::SetTransmitCycle(Transmit_Cycle v)
-        {
-            return m_impl->SetTransmitCycle(v);
-        }
+        {  return m_impl->SetTransmitCycle(v);  }
+        void WaveDeviceTx::SetGain(float g)
+        { return m_impl->SetGain(g);}
+        float WaveDeviceTx::GetGain()
+        { return m_impl->GetGain();}
     }
 }

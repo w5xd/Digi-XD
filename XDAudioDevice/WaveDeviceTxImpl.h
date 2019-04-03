@@ -16,6 +16,7 @@ namespace XD {
         const UINT WM_WAVEDEVICEOUTONOPEN = WM_USER + 2;
         const UINT WM_WAVEDEVICEOUTABORT = WM_USER + 3;
         const UINT WM_WAVECHECKYOURMESSAGES = WM_USER + 4;
+        const UINT WM_SETGAIN = WM_USER + 5;
         struct PlaybackBuffer;
         class WaveDeviceTxImpl : public ATL::CWindowImpl<WaveDeviceTxImpl>
         {
@@ -30,6 +31,8 @@ namespace XD {
             void SetTransmitCycle(Transmit_Cycle v) { m_transmitCycle = v; }
             void SetAudioBeginEndCb(const AudioBeginEndFcn_t&);
             bool OkToStart();
+            void SetGain(float);
+            float GetGain();
             DECLARE_WND_CLASS(_T("XDft8WaveDeviceRecorder"))
         protected:
             typedef std::unique_lock<std::mutex> lock_t;
@@ -37,6 +40,7 @@ namespace XD {
                 MESSAGE_HANDLER(WM_WAVEDEVICEOUTONOPEN, OnOpenPlayback)
                 MESSAGE_HANDLER(WM_WAVEDEVICEOUTABORT, OnAbortPlayback)
                 MESSAGE_HANDLER(WM_WAVECHECKYOURMESSAGES, OnNewData)
+                MESSAGE_HANDLER(WM_SETGAIN, OnSetGain)
                 MESSAGE_HANDLER(MM_WOM_DONE, OnWomDone)
                 MESSAGE_HANDLER(WM_TIMER, OnTimer)
             END_MSG_MAP()
@@ -51,6 +55,8 @@ namespace XD {
                 BOOL& /*bHandled*/);
             LRESULT OnTimer(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
                 BOOL& /*bHandled*/);
+            LRESULT OnSetGain(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
+                BOOL& /*bHandled*/);
 
             void threadHead();
 
@@ -59,6 +65,8 @@ namespace XD {
             Transmit_Cycle m_transmitCycle;
             WAVEFORMATEX m_wf;
             HWAVEOUT m_waveOut;
+            MIXERCONTROLW m_mixerControlId;
+            float m_gain;
             HANDLE m_started;
             DWORD m_threadId;
             unsigned m_deviceIndex;

@@ -28,5 +28,9 @@ namespace XD { namespace impl {
     {        m_impl->RecordFile(w);    }
     void WaveDevicePlayer::StopRecord()
     {        m_impl->StopRecord();    }
+    void WaveDevicePlayer::SetGain(float f)
+    { return m_impl->SetGain(f);}
+    float WaveDevicePlayer::GetGain()
+    { return m_impl->GetGain();}
 
 }}
