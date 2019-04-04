@@ -232,7 +232,7 @@ namespace XD {
         {
             if (m_waveOut)
                 return 0;
-            if (channel > 2)
+            if ((channel > 2) || (channel < 0))
                 return 0;
             // we handle just two variations: mono and stereo.
             m_wf = {};
@@ -267,15 +267,29 @@ namespace XD {
                     MIXERCONTROLDETAILS	mxcd = {};
                     mxcd.cbStruct = sizeof(mxcd);
                     mxcd.dwControlID = m_mixerControlId.dwControlID;
-                    mxcd.cChannels = 1;
-                    MIXERCONTROLDETAILS_UNSIGNED		uValue;
-                    mxcd.cbDetails = sizeof(uValue);
-                    mxcd.paDetails = &uValue;
+                    mxcd.cChannels = m_wf.nChannels;
+                    std::vector<MIXERCONTROLDETAILS_UNSIGNED>		uValue(m_wf.nChannels);
+                    mxcd.cbDetails = sizeof(uValue[0]);
+                    mxcd.paDetails = &uValue[0];
                     mmres = mixerGetControlDetails(reinterpret_cast<HMIXEROBJ>(m_waveOut), &mxcd,
                         MIXER_OBJECTF_HWAVEOUT);
                     if (mmres == MMSYSERR_NOERROR)
-                        m_gain = static_cast<float>(m_mixerControlId.Bounds.dwMinimum + uValue.dwValue) /
+                    {
+                        unsigned idx = m_wf.nChannels > 1 ? channel : 0;
+                        m_gain = static_cast<float>(m_mixerControlId.Bounds.dwMinimum + uValue[idx].dwValue) /
                             static_cast<float>(m_mixerControlId.Bounds.dwMaximum - m_mixerControlId.Bounds.dwMinimum);
+                    }
+                    else if (m_wf.nChannels == 2)
+                    {
+                        uValue.resize(1);
+                        mxcd.cChannels = 1;
+                        mmres = mixerGetControlDetails(reinterpret_cast<HMIXEROBJ>(m_waveOut), &mxcd,
+                            MIXER_OBJECTF_HWAVEOUT);
+                        if (mmres == MMSYSERR_NOERROR)
+                            m_gain = static_cast<float>(m_mixerControlId.Bounds.dwMinimum + uValue[0].dwValue) /
+                                static_cast<float>(m_mixerControlId.Bounds.dwMaximum - m_mixerControlId.Bounds.dwMinimum);
+                    }
+                    
                 }
                 return 1;
             }
@@ -349,12 +363,19 @@ namespace XD {
             MIXERCONTROLDETAILS	mxcd = {};
             mxcd.cbStruct = sizeof(mxcd);
             mxcd.dwControlID = m_mixerControlId.dwControlID;
-            mxcd.cChannels = 1;
-            MIXERCONTROLDETAILS_UNSIGNED		uValue;
-            mxcd.cbDetails = sizeof(uValue);
-            mxcd.paDetails = &uValue;
-            uValue.dwValue = static_cast<DWORD>(gain * (m_mixerControlId.Bounds.dwMaximum - m_mixerControlId.Bounds.dwMinimum));
-            uValue.dwValue += m_mixerControlId.Bounds.dwMinimum;
+            mxcd.cChannels = m_wf.nChannels;
+            std::vector<MIXERCONTROLDETAILS_UNSIGNED>		uValue(m_wf.nChannels);
+            mxcd.cbDetails = sizeof(uValue[0]);
+            mxcd.paDetails = &uValue[0];
+            unsigned idx = m_wf.nChannels > 1 ? m_channel : 0;
+            if ((MMSYSERR_NOERROR != mixerGetControlDetails(reinterpret_cast<HMIXEROBJ>(m_waveOut), &mxcd, MIXER_OBJECTF_HWAVEOUT))
+                && m_wf.nChannels != 1)
+            {
+                mxcd.cChannels = 1;
+                idx = 0;
+            }
+            uValue[idx].dwValue = static_cast<DWORD>(gain * (m_mixerControlId.Bounds.dwMaximum - m_mixerControlId.Bounds.dwMinimum));
+            uValue[idx].dwValue += m_mixerControlId.Bounds.dwMinimum;
             MMRESULT mmres = mixerSetControlDetails(reinterpret_cast<HMIXEROBJ>(m_waveOut), &mxcd,
                 MIXER_OBJECTF_HWAVEOUT);
             if (mmres == MMSYSERR_NOERROR)
