@@ -120,7 +120,7 @@ namespace XDpack77
                 { return new Dxpedition(split); }
                 else if ((i3 == 0) && ((n3 == 3) || (n3 == 4)))
                 { return new ArrlFieldDayMessage(split); }
-                else if (i3 == 1)
+                else if ((i3 == 1) || (i3 == 2))
                 { return new StandardMessage(split); }
                 else if (i3 == 3)
                 { return new RttyRoundUpMessage(split); }
