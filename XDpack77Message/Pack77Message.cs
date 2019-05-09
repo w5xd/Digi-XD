@@ -52,6 +52,7 @@ namespace XDpack77
             private DateTime whenLogged;
             private string rawString;
             private Message message;
+            private char separator;
 
             ReceivedMessage()
             {
@@ -62,7 +63,7 @@ namespace XDpack77
             public override String ToString() 
             {
                 // recreate the string used to parse.
-                return String.Format("{0,6}{1,4}{2,5}{3,5} ~  {4}", timeTag, dB, delayTag, hzTag, rawString);
+                return String.Format("{0,6}{1,4}{2,5}{3,5} {5}  {4}", timeTag, dB, delayTag, hzTag, rawString, separator);
             }
             public bool Match(ReceivedMessage other)
             {
@@ -86,7 +87,7 @@ namespace XDpack77
             public int CycleNumber { get { return cycleNumber; } }
 
             public static ReceivedMessage CreateFromReceived(int i3, int n3, string asTagged, 
-                string Asreceived, int cycleNumber)
+                string Asreceived, int cycleNumber, char separator='~')
             {
                 Message msg = CreateFromPacked(i3, n3, Asreceived);
                 if (msg != null)
@@ -96,6 +97,7 @@ namespace XDpack77
                     if (words.Length != 4)
                         throw new Exception("CreateFromPacked parse error 1");
                     rm.timeTag = words[0];
+                    rm.separator = separator;
                     Int32.TryParse(words[1], out rm.dB);
                     rm.delayTag = words[2];
                     rm.hzTag = words[3];

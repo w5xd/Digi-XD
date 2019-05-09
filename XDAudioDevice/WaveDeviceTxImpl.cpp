@@ -275,7 +275,7 @@ namespace XD {
                         MIXER_OBJECTF_HWAVEOUT);
                     if (mmres == MMSYSERR_NOERROR)
                     {
-                        unsigned idx = m_wf.nChannels > 1 ? channel : 0;
+                        unsigned idx = m_wf.nChannels > 1 ? static_cast<unsigned>(channel) : 0;
                         m_gain = static_cast<float>(m_mixerControlId.Bounds.dwMinimum + uValue[idx].dwValue) /
                             static_cast<float>(m_mixerControlId.Bounds.dwMaximum - m_mixerControlId.Bounds.dwMinimum);
                     }
