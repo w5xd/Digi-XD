@@ -6,8 +6,6 @@ namespace XD {
 
         namespace {
             const unsigned CYCLE_TIMERID = 2;
-            const unsigned CYCLE_SECONDS = 15;
-            const unsigned SECOND_NUMBER_TO_START = 1;
         }
 
         struct PlaybackBuffer : public WAVEHDR
@@ -145,17 +143,48 @@ namespace XD {
             {
                 if (m_transmitCycle != PLAY_NOW)
                 {
-                    SYSTEMTIME st;
-                    GetSystemTime(&st);
-                    unsigned ft8SecondNumber = st.wSecond % CYCLE_SECONDS;
-                    bool cycleIsOdd = (1 & (st.wSecond / 15)) != 0;
-                    if ((cycleIsOdd ^ (m_transmitCycle == PLAY_ODD_15S)) ||
-                        (ft8SecondNumber != SECOND_NUMBER_TO_START))
+                    bool playNow = false;
+                    unsigned cycleSeconds = 0;
+                    bool doOdd = false;
+                    switch (m_transmitCycle)
+                    {
+                    case PLAY_ODD_15S:
+                        doOdd = true;
+                        cycleSeconds = 15;
+                        break;
+                    case PLAY_EVEN_15S:
+                        cycleSeconds = 15;
+                        break;
+                    case PLAY_ODD_6S:
+                        cycleSeconds = 6;
+                        doOdd = true;
+                        break;
+                    case PLAY_EVEN_6S:
+                        cycleSeconds = 6;
+                        break;
+                    case PLAY_NOW:
+                        playNow = true;
+                        break;
+                    }
+
+                    if (!playNow)
+                    {
+                        SYSTEMTIME st;
+                        GetSystemTime(&st);
+                        unsigned ftSecondNumber = st.wSecond % cycleSeconds;
+                        if (ftSecondNumber == 0)
+                        {
+                            bool cycleIsOdd = (1 & (st.wSecond / cycleSeconds)) != 0;
+                            playNow = !(cycleIsOdd ^ doOdd);
+                        }
+                    }
+
+                    if (!playNow)
                     {   // cannot start in current second
                         if (!m_timerActive)
                         {
                             m_timerActive = true;
-                            SetTimer(CYCLE_TIMERID, 100);
+                            SetTimer(CYCLE_TIMERID, 50);
                         }
                         return; // start later
                     }

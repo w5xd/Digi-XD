@@ -4,7 +4,7 @@
 namespace XD {
     struct AudioSink;
     namespace impl {
-        enum Transmit_Cycle { PLAY_NOW, PLAY_ODD_15S, PLAY_EVEN_15S };
+        enum Transmit_Cycle { PLAY_NOW, PLAY_ODD_15S, PLAY_EVEN_15S, PLAY_ODD_6S, PLAY_EVEN_6S };
         // must match XDTxAudioSink.h
         class WaveDeviceTxImpl;
         typedef std::function<void(bool)> AudioBeginEndFcn_t;
