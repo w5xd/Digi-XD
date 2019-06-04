@@ -144,23 +144,23 @@ namespace XD {
                 if (m_transmitCycle != PLAY_NOW)
                 {
                     bool playNow = false;
-                    unsigned cycleSeconds = 0;
+                    unsigned cycleTenthSeconds = 0;
                     bool doOdd = false;
                     switch (m_transmitCycle)
                     {
                     case PLAY_ODD_15S:
                         doOdd = true;
-                        cycleSeconds = 15;
+                        cycleTenthSeconds = 150;
                         break;
                     case PLAY_EVEN_15S:
-                        cycleSeconds = 15;
+                        cycleTenthSeconds = 150;
                         break;
-                    case PLAY_ODD_6S:
-                        cycleSeconds = 6;
+                    case PLAY_ODD_8PER_MIN:
+                        cycleTenthSeconds = 75;
                         doOdd = true;
                         break;
-                    case PLAY_EVEN_6S:
-                        cycleSeconds = 6;
+                    case PLAY_EVEN_8PER_MIN:
+                        cycleTenthSeconds = 75;
                         break;
                     case PLAY_NOW:
                         playNow = true;
@@ -171,10 +171,12 @@ namespace XD {
                     {
                         SYSTEMTIME st;
                         GetSystemTime(&st);
-                        unsigned ftSecondNumber = st.wSecond % cycleSeconds;
-                        if (ftSecondNumber == 0)
+                        WORD tenthSeconds = st.wSecond * 10 + st.wMilliseconds / 100;
+                        unsigned ftSecondNumberByTen = tenthSeconds % cycleTenthSeconds;
+                        static const unsigned MAX_TENTHS_LATE = 2;
+                        if (ftSecondNumberByTen <= MAX_TENTHS_LATE)
                         {
-                            bool cycleIsOdd = (1 & (st.wSecond / cycleSeconds)) != 0;
+                            bool cycleIsOdd = (1 & (tenthSeconds / cycleTenthSeconds)) != 0;
                             playNow = !(cycleIsOdd ^ doOdd);
                         }
                     }
