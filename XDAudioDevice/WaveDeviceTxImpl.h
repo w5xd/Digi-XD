@@ -65,6 +65,7 @@ namespace XD {
             Transmit_Cycle m_transmitCycle;
             WAVEFORMATEX m_wf;
             HWAVEOUT m_waveOut;
+            MMRESULT m_waveOutWriteError;
             MIXERCONTROLW m_mixerControlId;
             float m_gain;
             HANDLE m_started;

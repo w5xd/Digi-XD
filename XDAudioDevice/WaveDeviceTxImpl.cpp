@@ -1,3 +1,4 @@
+#include <sstream>
 #include "WaveDeviceTxImpl.h"
 
 namespace XD {
@@ -52,6 +53,7 @@ namespace XD {
             , m_transmitCycle(PLAY_NOW)
             , m_started(::CreateEvent(0, TRUE, FALSE, 0))
             , m_timerActive(false)
+            , m_waveOutWriteError(MMSYSERR_NOERROR)
             , m_windowThread(std::bind(&WaveDeviceTxImpl::threadHead, this))
         {
             ::WaitForSingleObject(m_started, INFINITE);
@@ -235,7 +237,8 @@ namespace XD {
             }
             if (readyToSend)
             {
-                if (MMSYSERR_NOERROR == ::waveOutWrite(m_waveOut, readyToSend.release(), sizeof(WAVEHDR)))
+                MMRESULT mmr = ::waveOutWrite(m_waveOut, readyToSend.release(), sizeof(WAVEHDR));
+                if (MMSYSERR_NOERROR == mmr)
                 {
                     m_buffersOutstanding += 1;
                     if (!m_playing)
@@ -243,6 +246,7 @@ namespace XD {
                 }
                 else
                 {
+                    m_waveOutWriteError = mmr;
                     waveOutClose(m_waveOut);
                     m_waveOut = 0;
                 }
@@ -338,7 +342,16 @@ namespace XD {
             if (!IsWindow())
                 throw std::runtime_error("WaveTxDevice no HWND");
             if (!m_waveOut)
-                throw std::runtime_error("WaveTxDevice no HWAVEOUT");
+            {
+                if (m_waveOutWriteError == MMSYSERR_NOERROR)
+                    throw std::runtime_error("WaveTxDevice no HWAVEOUT");
+                else
+                {
+                    std::stringstream oss;
+                    oss << "WaveTxDevice no HWAVEOUT, err=" << m_waveOutWriteError;
+                    throw std::runtime_error(oss.str().c_str());
+                }
+            }
             return true;
         }
 
