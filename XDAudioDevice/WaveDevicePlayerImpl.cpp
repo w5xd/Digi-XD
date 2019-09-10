@@ -4,23 +4,25 @@
 #include "WaveWriterImpl.h"
 namespace XD { namespace impl {
 
+    const unsigned recordBufferLengthMsec = 64;
+
 	struct RecordingBuffer : public WAVEHDR
 	{
-		static const unsigned BUF_SIZE = 0x1000;
-
+        typedef short Sample_t;
         // the Windows wave device wants buffers
         // described by WAVEHDR. it makes for
         // half as many trips through the memory
         // allocator if we put the WAVEHDR in the buffer.
-		RecordingBuffer(HWAVEIN wi) 
+		RecordingBuffer(HWAVEIN wi, unsigned sampleCount) 
 			:m_w(wi)
+            ,samples(sampleCount)
 		{
 			setup();
 		}
 		void setup()
 		{
-			lpData = (LPSTR)&samples[0];
-			dwBufferLength = sizeof(samples);
+			lpData = reinterpret_cast<LPSTR>(&samples[0]);
+			dwBufferLength = static_cast<DWORD>(sizeof(Sample_t) * samples.size());
 			dwUser = 0;
 			dwBytesRecorded = 0;
 			dwFlags = 0;
@@ -38,8 +40,10 @@ namespace XD { namespace impl {
 			waveInUnprepareHeader(m_w, this, sizeof(WAVEHDR));
 			setup();
 		}
-		short samples[BUF_SIZE];
 		const HWAVEIN m_w;
+        const Sample_t *pSamples() { return &samples[0]; }
+    protected:
+		std::vector<Sample_t> samples;
 	};
 
 	WaveDevicePlayerImpl::WaveDevicePlayerImpl()
@@ -157,9 +161,14 @@ namespace XD { namespace impl {
 			m_deviceIndex = static_cast<unsigned>(deviceIndex);
             m_channel = static_cast<unsigned>(channel);
             // one buffer is not enough. two is probably enough. so maybe 3 is better?
-			waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
-			waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
-            waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn), sizeof(WAVEHDR));
+            unsigned sampleCount = (m_wf.nAvgBytesPerSec * recordBufferLengthMsec) / (1000 * sizeof(short));
+            unsigned samplesPerBlock = m_wf.nBlockAlign / sizeof(short);
+            sampleCount += samplesPerBlock-1; 
+            sampleCount /= samplesPerBlock;
+            sampleCount *= samplesPerBlock;
+			waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn, sampleCount), sizeof(WAVEHDR));
+			waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn, sampleCount), sizeof(WAVEHDR));
+            waveInAddBuffer(m_waveIn, new RecordingBuffer(m_waveIn, sampleCount), sizeof(WAVEHDR));
             //waveInStart(m_waveIn); No. Instead, exit with device in paused state
 
             // find its volume control
@@ -217,15 +226,15 @@ namespace XD { namespace impl {
                     const unsigned numFrames = pBuf->dwBytesRecorded / (sizeof(short) * m_wf.nChannels);
                     if (m_wf.nChannels == 1)
                     {   // if input is mono, no need to reformat
-                        m_audioSink->AddMonoSoundFrames(pBuf->samples, numFrames);
+                        m_audioSink->AddMonoSoundFrames(pBuf->pSamples(), numFrames);
                         if (m_recordingFile)
-                            m_recordingFile->Write(pBuf->samples, numFrames );
+                            m_recordingFile->Write(pBuf->pSamples(), numFrames );
                     }
                     else
                     {   // multi-channel input data has to be sorted through
                         std::vector<short> mono(numFrames);
                         short *p = &mono[0];
-                        const short *q = pBuf->samples;
+                        const short *q = pBuf->pSamples();
                         if (m_channel >= m_wf.nChannels)
                             return 0;
                         q += m_channel;

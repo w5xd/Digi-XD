@@ -9,5 +9,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright © 2019 Wayne E. Wright, W5XD 2019")]
 
 
-[assembly: AssemblyVersion("1.0.0.15")]
-[assembly: AssemblyFileVersion("1.0.0.15")]
+[assembly: AssemblyVersion("1.0.0.16")]
+[assembly: AssemblyFileVersion("1.0.0.16")]
