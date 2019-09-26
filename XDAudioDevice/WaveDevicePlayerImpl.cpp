@@ -1,4 +1,5 @@
 #include <vector>
+#include <functional>
 #include "WaveDevicePlayerImpl.h"
 #include <AudioSink.h>
 #include "WaveWriterImpl.h"

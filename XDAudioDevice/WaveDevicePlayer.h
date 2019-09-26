@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <memory>
 namespace XD {
     namespace impl {
         class WaveDevicePlayerImpl;
