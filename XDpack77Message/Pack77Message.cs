@@ -41,6 +41,11 @@ namespace XDpack77
                                         //...an individual call independent of ToCall and FromCall
         }
 
+        public interface IsCQ
+        {
+            bool SolicitsAnswers { get; } // return true if a CQ or otherwise solicits calls
+        }
+
         // A ReceivedMessage always has a Message in its Pack77Message property
         public class ReceivedMessage
         {
@@ -212,7 +217,7 @@ namespace XDpack77
             public bool CallQSLedIsHashed { get { return callAckedIsHashed; } }
         }
 
-        public class StandardMessage : Message, ToFromCall, Roger, Exchange, QSL
+        public class StandardMessage : Message, ToFromCall, Roger, Exchange, QSL, IsCQ
         {
             // two calls, either one of which MAY be hasheed.
             //      followed by one of these:
@@ -223,7 +228,7 @@ namespace XDpack77
             //          +/-nn
             //          R+/-nn
             // examples:
-            // FROM TO
+            // TO    FROM
             // TO is also allowed to be QRZ or DE, but otherwise must be ham call
             // W9XYZ K1ABC +03
             // W9XYZ K1ABC RRR
@@ -325,22 +330,24 @@ namespace XDpack77
                     return NO_DB;
                 }
             }
-            private bool IsCQ {
-                get {
-                    return toCall!=null && (toCall == "CQ" || toCall.StartsWith("CQ "));
-                }
+            private bool isAcq {
+                get { return toCall!=null && (
+                        toCall == "CQ" || toCall.StartsWith("CQ ") || toCall == "DE" || toCall == "QRZ");  }
             }
+            private bool isAcknowledge {
+                get {return  grid == "RR73" || grid == "RRR" ||   grid == "73";}
+            }
+            public bool SolicitsAnswers { get { 
+                    return isAcq || isAcknowledge;
+                    } }
             public string GridSquare { get{ 
-                    if (String.Equals(CallQSLed,"ALL") && !IsCQ) 
+                    if (isAcknowledge) 
                         return null;
                     return grid; } }
+
             public string CallQSLed {
-                get {
-                    return (grid == "RR73" ||
-                           grid == "RRR" ||
-                           grid == "73" ||
-                           IsCQ
-                           ) ? "ALL" : null;
+                get { return isAcknowledge ? toCall : 
+                           (isAcq ? "ALL" : null);
                 }
             }
         }
@@ -423,10 +430,10 @@ namespace XDpack77
             public int SignaldB { get { return NO_DB; } }
             public String GridSquare { get { return null; } }
             public bool Roger { get { return containsRoger;}  }
-            public String CallQSLed { get { return containsTU ?  "ALL" : null; }  }
+            public String CallQSLed { get { return containsTU ? "ALL" : (containsRoger ? toCall : null); }  }
         }
 
-        public class NonStandardCallMessage : Message, ToFromCall, QSL
+        public class NonStandardCallMessage : Message, ToFromCall, QSL, IsCQ
         {
             // The non-standard CALL is the one NOT hashed
             // <W9XYZ> PJ4/K1ABC 
@@ -469,10 +476,12 @@ namespace XDpack77
             public bool FromCallIsHashed { get { return fromCallIsHashed; } }
             public string ToCall { get { return toCall;}  }
             public bool ToCallIsHashed { get { return toCallIsHashed; } }
+            public bool SolicitsAnswers { get { return !String.IsNullOrEmpty(CallQSLed);} }       
+            private bool startWithCQ { get { return null != toCall && (toCall.StartsWith("CQ ") || toCall == "CQ" );} }
             public string CallQSLed { get { return 
-                        toCall.StartsWith("CQ ") ||  toCall == "CQ" ||
-                        msg == "RR" || msg == "RR73" ||
-                        msg == "73" ? "ALL" : null;}  }
+                        startWithCQ ? "ALL" :(
+                            msg == "RRR" || msg == "RR73" ||
+                            msg == "73" ? toCall : null);}  }
         }
 
         public class ArrlFieldDayMessage : Message, ToFromCall, Roger, Exchange
@@ -596,7 +605,7 @@ namespace XDpack77
             public bool Roger { get { return containsRoger; } }
             public string Exchange { get { return rpt + " " + gridField; } }
             public int SignaldB { get { return Int32.Parse(rpt); } }
-            public String CallQSLed { get { return containsTU ? "ALL" : null; } }
+            public String CallQSLed { get { return containsTU ? toCall : null; } }
             public string RST { get { return null; } }
             public String GridSquare { get { return gridField; } }
         }
