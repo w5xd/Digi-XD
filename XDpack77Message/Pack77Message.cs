@@ -39,6 +39,7 @@ namespace XDpack77
         {   // implicit QSL to prior message
             String CallQSLed { get;  } // can be null (which means none) or "ALL" or ...
                                         //...an individual call independent of ToCall and FromCall
+            String QslText { get; } // RRR, RR73, 73, or null
         }
 
         public interface IsCQ
@@ -214,6 +215,7 @@ namespace XDpack77
             public int SignaldB { get { return Int32.Parse(report); } }
             public string GridSquare { get { return null; } }
             public String CallQSLed { get { return callAcked; }  }
+            public String QslText { get { return "RR73"; } }
             public bool CallQSLedIsHashed { get { return callAckedIsHashed; } }
         }
 
@@ -346,10 +348,13 @@ namespace XDpack77
                     return grid; } }
 
             public string CallQSLed {
-                get { return isAcknowledge ? toCall : 
-                           (isAcq ? "ALL" : null);
+                get {
+                    return isAcknowledge ? toCall :
+                         (isAcq ? "ALL" : null);
                 }
             }
+
+            public string QslText { get { return isAcknowledge ? grid : null; } }
         }
 
         public class RttyRoundUpMessage : Message, ToFromCall, Exchange, Roger, QSL
@@ -431,6 +436,8 @@ namespace XDpack77
             public String GridSquare { get { return null; } }
             public bool Roger { get { return containsRoger;}  }
             public String CallQSLed { get { return containsTU ? "ALL" : (containsRoger ? toCall : null); }  }
+            public String QslText { get { return containsTU ? "TU" : (containsRoger ? "R" : null); } }
+
         }
 
         public class NonStandardCallMessage : Message, ToFromCall, QSL, IsCQ
@@ -482,6 +489,7 @@ namespace XDpack77
                         startWithCQ ? "ALL" :(
                             msg == "RRR" || msg == "RR73" ||
                             msg == "73" ? toCall : null);}  }
+            public String QslText { get { return msg; } }
         }
 
         public class ArrlFieldDayMessage : Message, ToFromCall, Roger, Exchange
@@ -606,6 +614,7 @@ namespace XDpack77
             public string Exchange { get { return rpt + " " + gridField; } }
             public int SignaldB { get { return Int32.Parse(rpt); } }
             public String CallQSLed { get { return containsTU ? toCall : null; } }
+            public String QslText { get { return containsTU ? "TU" : null; } }
             public string RST { get { return null; } }
             public String GridSquare { get { return gridField; } }
         }
