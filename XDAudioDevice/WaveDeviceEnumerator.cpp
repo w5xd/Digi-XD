@@ -43,7 +43,7 @@ namespace XD {
     System::String^ WaveDeviceEnumerator::waveInInstanceId(int waveInIdx)
     {
         System::String ^ret = nullptr;
-        size_t cbEndpointId;
+        size_t cbEndpointId(0);
         MMRESULT mmr = waveInMessage((HWAVEIN)IntToPtr(waveInIdx),
             DRV_QUERYFUNCTIONINSTANCEIDSIZE,
             (DWORD_PTR)&cbEndpointId, NULL);
@@ -65,7 +65,7 @@ namespace XD {
     System::String^ WaveDeviceEnumerator::waveOutInstanceId(int waveOutIdx)
     {
         System::String ^ret = nullptr;
-        size_t cbEndpointId;
+        size_t cbEndpointId(0);
         MMRESULT mmr = waveOutMessage((HWAVEOUT)IntToPtr(waveOutIdx),
             DRV_QUERYFUNCTIONINSTANCEIDSIZE,
             (DWORD_PTR)&cbEndpointId, NULL);
