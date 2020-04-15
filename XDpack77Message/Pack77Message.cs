@@ -36,10 +36,11 @@ namespace XDpack77
         { bool Roger { get;  } } // true return is ack FromCall to ToCall 
 
         public interface QSL
-        {   // implicit QSL to prior message
+        {   // implicit QSL to prior message 
             String CallQSLed { get;  } // can be null (which means none) or "ALL" or ...
                                         //...an individual call independent of ToCall and FromCall
             String QslText { get; } // RRR, RR73, 73, or null
+            // "R" is not a QSL
         }
 
         public interface IsCQ
@@ -347,6 +348,7 @@ namespace XDpack77
                         return null;
                     return grid; } }
 
+            // interface QSL
             public string CallQSLed {
                 get {
                     return isAcknowledge ? toCall :
@@ -435,8 +437,9 @@ namespace XDpack77
             public int SignaldB { get { return NO_DB; } }
             public String GridSquare { get { return null; } }
             public bool Roger { get { return containsRoger;}  }
-            public String CallQSLed { get { return containsTU ? "ALL" : (containsRoger ? toCall : null); }  }
-            public String QslText { get { return containsTU ? "TU" : (containsRoger ? "R" : null); } }
+            // interface QSL
+            public String CallQSLed { get { return containsTU ? "ALL" :  null; }  }
+            public String QslText { get { return containsTU ? "TU" :  null; } }
 
         }
 
@@ -485,6 +488,7 @@ namespace XDpack77
             public bool ToCallIsHashed { get { return toCallIsHashed; } }
             public bool SolicitsAnswers { get { return !String.IsNullOrEmpty(CallQSLed);} }       
             private bool startWithCQ { get { return null != toCall && (toCall.StartsWith("CQ ") || toCall == "CQ" );} }
+            // interface QSL
             public string CallQSLed { get { return 
                         startWithCQ ? "ALL" :(
                             msg == "RRR" || msg == "RR73" ||
