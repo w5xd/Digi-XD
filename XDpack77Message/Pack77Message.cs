@@ -136,8 +136,6 @@ namespace XDpack77
                 { return new RttyRoundUpMessage(split); }
                 else if (i3 == 4)
                 { return new NonStandardCallMessage(split); }
-                else if (i3 == 5)
-                { return new WwrofContestMessage(split); }
                 return null;
             }
         }
@@ -555,72 +553,5 @@ namespace XDpack77
             public string GridSquare { get { return null; } }
         }
 
-        public class WwrofContestMessage : Message, ToFromCall, Roger, Exchange, QSL
-        {
-            // TU; G3AAA K1ABC R-09 FN
-            string fromCall;
-            bool fromCallIsHashed = false;
-            string toCall;
-            bool toCallIsHashed = false;
-            bool containsTU;
-            private string rpt;
-            private string gridField;
-            bool containsRoger = false;
-            public WwrofContestMessage(string[] incoming)
-            {
-                int which = 0;
-                if (incoming.Length <= which)
-                    throw new Exception("invalid WwrofContestMessage parse 1");
-                containsTU = incoming[which] == "TU;";
-                if (containsTU)
-                {
-                    which += 1;
-                    if (incoming.Length <= which)
-                        throw new Exception("invalid WwrofContestMessage parse 2");
-                }
-                toCall = incoming[which++];
-                if (toCall.StartsWith("<"))
-                {
-                    toCallIsHashed = true;
-                    toCall = toCall.Substring(1);
-                    if (toCall.EndsWith(">"))
-                        toCall = toCall.Substring(0, toCall.Length - 1);
-                }
-                if (incoming.Length <= which)
-                    throw new Exception("invalid WwrofContestMessage parse 3");
-                fromCall = incoming[which++];
-                if (fromCall.StartsWith("<"))
-                {
-                    fromCallIsHashed = true;
-                    fromCall = fromCall.Substring(1);
-                    if (fromCall.EndsWith(">"))
-                        fromCall = fromCall.Substring(0, fromCall.Length - 1);
-                }
-                if (incoming.Length <= which)
-                    throw new Exception("invalid WwrofContestMessage parse 3");
-
-                rpt = incoming[which++];
-                if (rpt.StartsWith("R"))
-                {
-                    containsRoger = true;
-                    rpt = rpt.Substring(1);
-                    if (incoming.Length <= which)
-                        throw new Exception("invalid WwrofContestMessage parse 4");
-                }
-                gridField = incoming[which++];
-            }
-
-            public string FromCall { get { return fromCall; } }
-            public bool FromCallIsHashed { get { return fromCallIsHashed; } }
-            public string ToCall { get { return toCall; } }
-            public bool ToCallIsHashed { get { return toCallIsHashed; } }
-            public bool Roger { get { return containsRoger; } }
-            public string Exchange { get { return rpt + " " + gridField; } }
-            public int SignaldB { get { return Int32.Parse(rpt); } }
-            public String CallQSLed { get { return containsTU ? toCall : null; } }
-            public String QslText { get { return containsTU ? "TU" : null; } }
-            public string RST { get { return null; } }
-            public String GridSquare { get { return gridField; } }
-        }
     }
 }
