@@ -12,6 +12,8 @@ namespace XDpack77
         public class Message
         {
             public const int NO_DB = -999;
+            public int i3 { get; protected set; } = -1;
+            public int n3 { get; protected set; } = -1;
             private ReceivedMessage asReceived; // can be null. not all messages are received
             public ReceivedMessage AsReceived { get { return asReceived; } set { asReceived = value; } }
          }
@@ -122,31 +124,33 @@ namespace XDpack77
             public static Message CreateFromPacked(int i3, int n3, string Asreceived)
             {
                 if ((i3 == 0) && (n3 == 0))
-                { return new FreeText(Asreceived); }
+                { return new FreeText(Asreceived, i3, n3); }
 
                 // trim space characters
                 String[] split = Asreceived.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
                 if ((i3 == 0) && (n3 == 1))
-                { return new Dxpedition(split); }
+                { return new Dxpedition(split, i3, n3); }
                 else if ((i3 == 0) && ((n3 == 3) || (n3 == 4)))
-                { return new ArrlFieldDayMessage(split); }
+                { return new ArrlFieldDayMessage(split, i3, n3); }
                 else if ((i3 == 1) || (i3 == 2))
-                { return new StandardMessage(split); }
+                { return new StandardMessage(split, i3, n3); }
                 else if (i3 == 3)
-                { return new RttyRoundUpMessage(split); }
+                { return new RttyRoundUpMessage(split, i3, n3); }
                 else if (i3 == 4)
-                { return new NonStandardCallMessage(split); }
+                { return new NonStandardCallMessage(split, i3, n3); }
                 return null;
             }
         }
 
         public class FreeText : Message
         {
-            public FreeText(String freeText)
+            public FreeText(String freeText, int i3, int n3)
             {
                 contents = freeText;
                 if (contents.Length > 13)
                     contents = contents.Substring(0, 13);
+                base.i3 = i3;
+                base.n3 = n3;
             }
             private String contents;
             String Contents {
@@ -163,8 +167,10 @@ namespace XDpack77
             private bool toCallIsHashed = false;
             private string fromCall;
             private string report;
-            public Dxpedition(String[] incoming)
+            public Dxpedition(String[] incoming, int i3, int n3)
             {
+                base.i3 = i3;
+                base.n3 = n3;
                 // two calls, an implied RR73 to the first, a hash of my own call, and a signal strength
                 // K1ABC RR73; W9XYZ <KH1/KH7Z> -12
                 int which = 0;
@@ -253,8 +259,10 @@ namespace XDpack77
             private bool includesAck = false;
             private string grid=null; // can also be "73" or "RRR"
             private string rpt;
-            public StandardMessage(String[] incoming)
+            public StandardMessage(String[] incoming, int i3, int n3)
             {
+                base.i3 = i3;
+                base.n3 = n3;
                 int which = 0;
                 if (incoming.Length <= which)
                     throw new Exception("invalid StandardMessage parse 1");
@@ -381,8 +389,10 @@ namespace XDpack77
             bool fromCallIsHashed = false;
             string rst="";
             string rpt="";
-            public RttyRoundUpMessage(string[] incoming)
+            public RttyRoundUpMessage(string[] incoming, int i3, int n3)
             {
+                base.i3 = i3;
+                base.n3 = n3;
                 int which = 0;
                 if (incoming.Length <= which)
                     throw new Exception("invalid RttyRoundUpMessage parse 1");
@@ -453,8 +463,10 @@ namespace XDpack77
             string fromCall;
             bool fromCallIsHashed = false;
             string msg; // empty, or RR73 or RRR or 73
-            public NonStandardCallMessage(string[] incoming)
+            public NonStandardCallMessage(string[] incoming, int i3, int n3)
             {
+                base.i3 = i3;
+                base.n3 = n3;
                 int which = 0;
                 if (incoming.Length <= which)
                     throw new Exception("invalid NonStandardCallMessage parse 1");
@@ -504,8 +516,10 @@ namespace XDpack77
             string classifer;
             string section;
             bool containsRoger = false;
-            public ArrlFieldDayMessage(string[] incoming)
+            public ArrlFieldDayMessage(string[] incoming, int i3, int n3)
             {
+                base.i3 = i3;
+                base.n3 = n3;
                 int which = 0;
                 if (incoming.Length <= which)
                     throw new Exception("invalid ArrlFieldDayMessage parse 1");
