@@ -7,6 +7,8 @@ namespace XD {
 
         namespace {
             const unsigned CYCLE_TIMERID = 2;
+            const unsigned DEFAULT_SAMPLES_PER_SECOND = 48000;
+            const unsigned MAX_BUFFERS_OUTSTANDING = 10;
         }
 
         struct PlaybackBuffer : public WAVEHDR
@@ -50,10 +52,12 @@ namespace XD {
             , m_completionSet(false)
             , m_playing(false)
             , m_buffersOutstanding(0)
+            , m_throttleSourceOnBuffersOutstanding(false)
             , m_transmitCycle(PLAY_NOW)
             , m_started(::CreateEvent(0, TRUE, FALSE, 0))
             , m_timerActive(false)
             , m_waveOutWriteError(MMSYSERR_NOERROR)
+            , m_SamplesPerSecond(DEFAULT_SAMPLES_PER_SECOND)
             , m_windowThread(std::bind(&WaveDeviceTxImpl::threadHead, this))
         {
             ::WaitForSingleObject(m_started, INFINITE);
@@ -131,6 +135,8 @@ namespace XD {
                         m_toSend.push_back(std::move(buf));
                     }
                     m_completionSet = false;
+                    while (m_throttleSourceOnBuffersOutstanding && (m_buffersOutstanding >= MAX_BUFFERS_OUTSTANDING - 1))
+                        m_notifyBuffersOutstanding.wait(l);
                 }
                 PostMessage(WM_WAVECHECKYOURMESSAGES);
                 return true;
@@ -221,7 +227,6 @@ namespace XD {
         LRESULT WaveDeviceTxImpl::OnNewData(UINT /*nMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
             BOOL& /*bHandled*/)
         {
-            static const unsigned MAX_BUFFERS_OUTSTANDING = 10;
             if (m_waveOut == 0)
                 return 0;
             if (m_buffersOutstanding > MAX_BUFFERS_OUTSTANDING)
@@ -272,7 +277,7 @@ namespace XD {
             // we handle just two variations: mono and stereo.
             m_wf = {};
             m_wf.wFormatTag = WAVE_FORMAT_PCM;
-            m_wf.nSamplesPerSec = 48000;
+            m_wf.nSamplesPerSec = m_SamplesPerSecond;
             m_wf.wBitsPerSample = 16;
             m_wf.nChannels = channel <= 1 ? 2 : 1;
             m_wf.nBlockAlign = m_wf.wBitsPerSample / 8 * m_wf.nChannels;
@@ -335,6 +340,7 @@ namespace XD {
         {
             if (IsWindow())
                 SendMessage(WM_WAVEDEVICEOUTABORT);
+            m_notifyBuffersOutstanding.notify_all();
         }
 
         bool WaveDeviceTxImpl::OkToStart()
@@ -368,6 +374,7 @@ namespace XD {
                 m_toSend.clear();
                 m_playing = false;
             }
+            m_notifyBuffersOutstanding.notify_all();
             return 0;
         }
 
@@ -377,6 +384,7 @@ namespace XD {
             PlaybackBuffer *pPlayback = reinterpret_cast<PlaybackBuffer*>(pBuf);
             delete pPlayback;
             m_buffersOutstanding -= 1;
+            m_notifyBuffersOutstanding.notify_all();
             if (m_completionSet && (m_buffersOutstanding == 0) && m_toSend.empty())
             {
                 ::waveOutPause(m_waveOut);
@@ -436,5 +444,25 @@ namespace XD {
         float WaveDeviceTxImpl::GetGain()
         {  return m_gain;   }
 
+        void WaveDeviceTxImpl::SetSamplesPerSecond(unsigned g)
+        {
+            m_SamplesPerSecond = g;
+        }
+
+        unsigned WaveDeviceTxImpl::GetSamplesPerSecond()
+        {
+            return m_SamplesPerSecond;
+        }
+
+        void WaveDeviceTxImpl::SetThrottleSource(bool v)
+        {
+            m_throttleSourceOnBuffersOutstanding = v;
+            m_notifyBuffersOutstanding.notify_all();
+        }
+
+        bool WaveDeviceTxImpl::GetThrottleSource()
+        {
+            return m_throttleSourceOnBuffersOutstanding;
+        }
     }
 }

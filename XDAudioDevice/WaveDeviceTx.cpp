@@ -64,5 +64,13 @@ namespace XD {
         { return m_impl->SetGain(g);}
         float WaveDeviceTx::GetGain()
         { return m_impl->GetGain();}
+        void WaveDeviceTx::SetSamplesPerSecond(unsigned g)
+        {            return m_impl->SetSamplesPerSecond(g);        }
+        unsigned WaveDeviceTx::GetSamplesPerSecond()
+        {            return m_impl->GetSamplesPerSecond();        }
+        void WaveDeviceTx::SetThrottleSource(bool g)
+        {            return m_impl->SetThrottleSource(g);        }
+        bool WaveDeviceTx::GetThrottleSource()
+        {            return m_impl->GetThrottleSource();        }
     }
 }

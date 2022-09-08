@@ -83,6 +83,18 @@ namespace XD {
     float WaveDeviceTx::Gain::get()
     {  return m_impl->GetGain();  }
 
+    void WaveDeviceTx::SamplesPerSecond::set(unsigned v)
+    {        return m_impl->SetSamplesPerSecond(v);    }
+
+    unsigned WaveDeviceTx::SamplesPerSecond::get()
+    {        return m_impl->GetSamplesPerSecond();    }
+
+    void WaveDeviceTx::ThrottleSource::set(bool v)
+    {        return m_impl->SetThrottleSource(v);    }
+
+    bool WaveDeviceTx::ThrottleSource::get()
+    {        return m_impl->GetThrottleSource();    }
+
     System::IntPtr FileDeviceTx::Open(System::String ^filePath)
     {
         try {
