@@ -1,5 +1,6 @@
 #pragma once
 #include <thread>
+#include <condition_variable>
 #include <mutex>
 #include <memory>
 #include <deque>
@@ -33,6 +34,10 @@ namespace XD {
             bool OkToStart();
             void SetGain(float);
             float GetGain();
+            void SetSamplesPerSecond(unsigned);
+            unsigned GetSamplesPerSecond();
+            void SetThrottleSource(bool);
+            bool GetThrottleSource();
             DECLARE_WND_CLASS(_T("XDft8WaveDeviceRecorder"))
         protected:
             typedef std::unique_lock<std::mutex> lock_t;
@@ -64,6 +69,7 @@ namespace XD {
 
             Transmit_Cycle m_transmitCycle;
             WAVEFORMATEX m_wf;
+            unsigned m_SamplesPerSecond;
             HWAVEOUT m_waveOut;
             MMRESULT m_waveOutWriteError;
             MIXERCONTROLW m_mixerControlId;
@@ -77,7 +83,9 @@ namespace XD {
             bool m_playing;
             int m_buffersOutstanding;
             bool m_timerActive;
+            bool m_throttleSourceOnBuffersOutstanding;
             std::deque<std::unique_ptr<PlaybackBuffer>> m_toSend;
+            std::condition_variable m_notifyBuffersOutstanding;
             std::mutex m_mutex;
             std::thread m_windowThread;// initialize last
         };

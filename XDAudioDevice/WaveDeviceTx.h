@@ -21,6 +21,10 @@ namespace XD {
             AudioSink *GetTxSink(const AudioBeginEndFcn_t &);
             void SetGain(float);
             float GetGain();
+            void SetSamplesPerSecond(unsigned);
+            unsigned GetSamplesPerSecond();
+            void SetThrottleSource(bool);
+            bool GetThrottleSource();
         protected:
             std::shared_ptr<WaveDeviceTxImpl> m_impl;
         };
