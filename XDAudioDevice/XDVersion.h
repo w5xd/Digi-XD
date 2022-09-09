@@ -1,6 +1,6 @@
 
-#define XDFILEVERSION 	1, 0, 0, 19
-#define XDPRODUCTVERSION 	1, 0, 0, 19
-#define XDFILEVERSIONSTR "1.0.0.19"
-#define XDPRODUCTVERSIONSTR "1.0.0.19"
-#define XDLEGALCOPYRIGHTSTR "Copyright (c) 2020 by Wayne E. Wright, W5XD"
+#define XDFILEVERSION 	1, 1, 0, 1
+#define XDPRODUCTVERSION 	1, 1, 0, 1
+#define XDFILEVERSIONSTR "1.1.0.1"
+#define XDPRODUCTVERSIONSTR "1.1.0.1"
+#define XDLEGALCOPYRIGHTSTR "Copyright (c) 2022 by Wayne E. Wright, W5XD"
