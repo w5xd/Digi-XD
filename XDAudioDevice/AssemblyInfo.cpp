@@ -11,7 +11,7 @@ using namespace System::Security::Permissions;
 [assembly:AssemblyConfigurationAttribute(L"")];
 [assembly:AssemblyCompanyAttribute(L"")];
 [assembly:AssemblyProductAttribute(L"XDAudioDevice")];
-[assembly:AssemblyCopyrightAttribute(L"Copyright © 2019 Wayne E. Wright, W5XD")];
+[assembly:AssemblyCopyrightAttribute(L"Copyright © 2024 Wayne E. Wright, W5XD")];
 [assembly:AssemblyTrademarkAttribute(L"")];
 [assembly:AssemblyCultureAttribute(L"")];
 
