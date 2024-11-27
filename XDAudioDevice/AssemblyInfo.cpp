@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "XDftVersion.h"
 
 using namespace System;
 using namespace System::Reflection;
@@ -11,10 +12,12 @@ using namespace System::Security::Permissions;
 [assembly:AssemblyConfigurationAttribute(L"")];
 [assembly:AssemblyCompanyAttribute(L"")];
 [assembly:AssemblyProductAttribute(L"XDAudioDevice")];
-[assembly:AssemblyCopyrightAttribute(L"Copyright © 2024 Wayne E. Wright, W5XD")];
+[assembly:AssemblyCopyrightAttribute(XDFTLEGALCOPYRIGHTSTRL)] ;
 [assembly:AssemblyTrademarkAttribute(L"")];
 [assembly:AssemblyCultureAttribute(L"")];
 
 [assembly:ComVisible(false)];
 
 [assembly:CLSCompliantAttribute(true)];
+[assembly:AssemblyVersion(XDFTFILEVERSIONSTRL)] ;
+[assembly:AssemblyFileVersion(XDFTFILEVERSIONSTRL)] ;
